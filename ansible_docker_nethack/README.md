@@ -20,11 +20,14 @@ This Ansible playbook installs Docker on Ubuntu and runs a NetHack (a medieval t
 ---
 
 ## Setup
-- Add IP address and user name to 'inventory.ini'
+- Add IP address and user name to `inventory.ini`
 
-## Quick Start
+## Run
 
 1. Run the playbook:
 ```bash
-ansible-playbook -i inventory.ini install_docker.yml
+ansible-playbook -i inventory.ini install_docker.yml```
 
+## Play game
+Log on to the target and run:
+```docker attach medieval_nethack```
