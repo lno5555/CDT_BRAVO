@@ -1,0 +1,87 @@
+---
+# Name: Shawn Fuchs
+# Email: smf8314@rit.edu
+# Date: 2026-02-03
+# Description:
+# Installs Docker and deploys an offline NetHack Docker container.
+# Users connect directly using docker attach.
+
+- name: Deploy NetHack Docker container
+  hosts: all
+  become: true
+
+  vars:
+    docker_user: "{{ ansible_user }}"
+    nethack_container_name: medieval_nethack
+    nethack_image: jwodder/nethack:latest
+    nethack_data_dir: /srv/nethack_data
+
+  tasks:
+    # Install Docker prerequisites
+    - name: Install required packages
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+        state: present
+        update_cache: yes
+
+    # Docker repository setup
+    - name: Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker repository
+      apt_repository:
+        repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable
+        state: present
+
+    # Install and start Docker
+    - name: Install Docker Engine
+      apt:
+        name: docker-ce
+        state: latest
+        update_cache: yes
+
+    - name: Start and enable Docker
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Add user to Docker group
+      user:
+        name: "{{ docker_user }}"
+        groups: docker
+        append: yes
+
+    # Persistent save directory
+    - name: Create NetHack save directory
+      file:
+        path: "{{ nethack_data_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    # Pull NetHack image
+    - name: Pull NetHack Docker image
+      community.docker.docker_image:
+        name: "{{ nethack_image }}"
+        source: pull
+
+    # Run NetHack container
+    - name: Run NetHack container
+      community.docker.docker_container:
+        name: "{{ nethack_container_name }}"
+        image: "{{ nethack_image }}"
+        state: started
+        detach: true
+        tty: true
+        interactive: true
+        command: /usr/games/nethack
+        volumes:
+          - "{{ nethack_data_dir }}:/data"
