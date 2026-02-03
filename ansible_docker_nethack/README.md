@@ -26,7 +26,7 @@ This Ansible playbook installs Docker on Ubuntu and runs a NetHack (a medieval t
 
 1. Run the playbook:
 ```bash
-ansible-playbook -i inventory.ini install_docker.yml```
+ansible-playbook -i inventory.ini install_docker.yml
 
 ## Play game
 Log on to the target and run:
