@@ -12,7 +12,7 @@ This Ansible playbook installs MySQL and creates a database, a user with viewing
 ---
 
 ## Setup
-- Add IP address and user name to `inventory.ini`
+- Add IP address to `inventory.ini`
 
 ## Run
 
