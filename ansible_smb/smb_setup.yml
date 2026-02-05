@@ -1,0 +1,58 @@
+---
+# Jupiter Howard
+# jjh2865@rit.edu
+# 2/4/2026
+# Description:
+# Sets up SMB on a Windows Server
+# Enables signing on shared files
+# Enables auditing on shared files
+# Creates a template text file
+
+- name: Setup SMB on Windows Server
+  hosts: windows
+
+  vars:
+    path: C:\SMB\Public
+    signing_path: HKLM:\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters
+    template_path: C:\SMB\Public\template.txt
+    template_content: "This is a template file."
+
+  tasks:
+
+    # Set up the file server
+    - name: Set up File Server
+      win_feature:
+        name: FS-FileServer
+        state: present
+
+    # Create directory and provide share access to everyone
+    - name: Create share directory
+      win_file:
+        path: "{{ path }}"
+        state: directory
+
+    - name: Create SMB share
+      win_share:
+        name: Public
+        path: "{{ path }}"
+        full: Everyone
+
+    # Require signing on shared files
+    - name: Enable SMB signing
+      win_regedit:
+        path: "{{ signing_path }}"
+        name: RequireSecurity Signature
+        data: 1
+        type: dword
+
+    # Enable audting on the share directory
+    - name: Enable auditing on share directory
+      win_audit_policy_system:
+        subcategory: File System
+        audit_type: success, failure
+
+    # Create a template text file inside of the share directory
+    - name: Create template file
+      win_copy:
+        dest: "{{ template_path }}"
+        content: "{{ template_content }}"
