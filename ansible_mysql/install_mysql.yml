@@ -1,0 +1,58 @@
+---
+# Name: Shane Russell
+# Email: smr7408@rit.edu
+# Date: 2026-02-04
+
+# Description:
+# Installs MySQL
+# Establishes a database
+# Creates a MySQL user with viewing priveleges
+# Creates a table in the database
+
+- name: Install and configure MySQL, and related tasks
+  hosts: linux_machines
+  become: true
+
+  tasks:
+    # Installation of MySQL and PyMySQL used for database/table creation.
+    - name: Install MySQL and PyMySQL
+      apt:
+        name: 
+          - default-mysql-server
+          - python3-pymysql
+        state: present
+        update_cache: yes
+
+    - name: Make sure MySQL is running
+      service:
+        name: mysql
+        state: started
+        enabled: yes
+
+    # medievalDB database created.
+    - name: Create database
+      community.mysql.mysql_db:
+        name: medievalDB
+        state: present
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+
+    # User created with viewing privileges.
+    - name: Create MySQL user
+      community.mysql.mysql_user:
+        name: medievaluser
+        password: "Password123!"
+        host: "localhost"
+        priv: "medievalDB.*:SELECT"
+        state: present
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+
+    # Table with people information (Specific data can be added when agreed upon).
+    - name: Create medievaltable table
+      community.mysql.mysql_query:
+        login_db: medievalDB
+        query: |
+          CREATE TABLE IF NOT EXISTS medievalPeople (
+            name VARCHAR(40),
+            socialStatus VARCHAR(10)
+          );
+        login_unix_socket: /var/run/mysqld/mysqld.sock
