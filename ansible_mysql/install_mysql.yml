@@ -14,11 +14,12 @@
   become: true
 
   tasks:
-    # Installation of MySQL and PyMySQL used for database/table creation.
-    - name: Install MySQL and PyMySQL
+    # Installation of MySQL and python requirements used for database/table creation.
+    - name: Install MySQL, Python, and PyMySQL
       apt:
         name: 
           - default-mysql-server
+          - python3
           - python3-pymysql
         state: present
         update_cache: yes
