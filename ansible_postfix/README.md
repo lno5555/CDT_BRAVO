@@ -2,6 +2,7 @@
 
 Lightweight Ansible playbook to install and configure Postfix.
 
+```
 .
 ├── group_vars
 │   └── mailservers.yaml
@@ -10,6 +11,7 @@ Lightweight Ansible playbook to install and configure Postfix.
 ├── README.md
 └── templates
     └── main.cf.j2
+```
 
 ## Contents
 - group_vars/
