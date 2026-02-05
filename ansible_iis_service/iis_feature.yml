@@ -1,0 +1,46 @@
+# Name: Aman Patel
+# Date: 02/03/2026
+# Installing IIS (Internet Information Service)
+#
+# Description: This playbook is just showing how to install and configure IIS on Windows Server using Ansible & WinRM
+# Features: We have installing our features, we have file deployment and service management for our web service
+# deployment and we have our firewall rule as our fourth feature
+#
+# Customization: be sure to update the win-inventory.ini to change the hostname, vars, and IP address as needed
+
+- name: Installing and Configure IIS on Windows Server
+  hosts: windows
+  gather_facts: false
+
+  tasks:
+   - name: Install IIS Web Server feature
+     ansible.windows.win_feature:
+       name: Web-Server
+       state: present
+       include_management_tools: yes
+
+   - name: Deploy IIS webpage
+     ansible.windows.win_copy:
+       content: |
+         <html>
+         <body>
+         <h1>Ansible-IIS website</h1>
+         </body>
+         </html>
+       dest: "C:\\inetpub\\wwwroot\\index.html"
+
+   - name: Ensure IIS service is running
+     ansible.windows.win_service:
+       name: W3SVC
+       state: started
+       start_mode: auto
+
+   - name: Firewall Rule
+     win_firewall_rule:
+       name: "Allow_HTTP_80"
+       localport: 80
+       protocol: tcp
+       direction: in
+       action: allow
+       state: present
+       enabled: yes
