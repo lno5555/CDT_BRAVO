@@ -1,0 +1,17 @@
+# Postfix configuration
+# See /usr/share/postfix/main.cf.dist for full defaults
+
+# FQDN of this mail server, used in SMTP greetings and mail headers. If this isn't set, Postfix will guess (badly)
+myhostname = {{ postfix_myhostname }}
+# The domain name used in the From: header for LOCALLY sent mail
+myorigin = {{ postfix_myorigin }}
+
+inet_interfaces = {{ postfix_inet_interfaces }}
+inet_protocols = {{ postfix_inet_protocols }}
+
+# for local delivery
+mydestination = {{ postfix_mydestination | join(', ') }}
+home_mailbox = {{ postfix_home_mailbox }}
+
+# Disable relaying by default, no need for this yet
+relayhost =
