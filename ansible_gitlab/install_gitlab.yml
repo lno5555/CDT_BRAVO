@@ -3,20 +3,23 @@
   hosts: linux
   become: yes
   vars:
-    gitlab_ip: "100.65.4.96"
-    gitlab_password: "Password123!"
+    gitlab_ip: "100.65.4.96" #local server IP, CHANGE WHEN DEPLOYING
+    gitlab_password: "Password123!" # default password
 
+    # default greyteam user information
     username: "greyteam"
     password: "Password123!"
     email: "greyteam@cdt.rit.edu"
     name: "grey team"
 
+    # default project details
     project_name: "super_cool_project"
     project_description: "grey teams super cool gitlab project spun up by ansible"
     project_path: "{{ project_name }}"
     group_path: root
     project_visibility: "public"
 
+    # dummy test files
     test_files:
       - name: "README.md"
         content: |
@@ -28,10 +31,11 @@
 
           some app that I dont know how to write since I dont know c
 
-
+# Start tasks for playbook
 
   tasks:
 
+    # install all dependency packages needed for gitlab
     - name: install dependencies
       tags:
         - project
@@ -45,6 +49,7 @@
         state: present
         update_cache: yes
 
+    # download the gitlab package from the official site and run the install script
     - name: download gitlab
       shell: |
         curl -s https://packages.gitlab.com/install/repositories/gitlab/gitlab-ce/script.deb.sh | bash
@@ -52,31 +57,36 @@
       args: 
         creates: /opt/gitlab/bin/gitlab-ctl
 
+    # edit the configuration file to change the external URL to be able to access via web browser
     - name: configure gitlab external URL
       lineinfile:
         path: /etc/gitlab/gitlab.rb
         regexp: "^external_url"
         line: "external_url 'http://{{ gitlab_ip }}'"
 
+    # edit the configuration to change the root password
     - name: configure gitlab root password
       lineinfile:
         path: /etc/gitlab/gitlab.rb
         line: "gitlab_rails['initial_root_password'] = '{{gitlab_password}}'"
         insertafter: EOF
 
+    # apply all configuration changes
     - name: apply gitlab configuration
       command: gitlab-ctl reconfigure
       args: 
         creates: /var/opt/gitlab/bootstrapped
 
+    # sleep for 30 seconds to allow gitlab to apply all changes and start up
     - name: wait for gitlab to launch
       wait_for:
         port: 80
         delay: 30
 
+    # create the default greyteam user
     - name: create gitlab user
-      shell: |
-        gitlab-rails runner "
+      shell: | #using the gitlab-rails runner package to run these commands
+        gitlab-rails runner " 
         admin = User.find(1)
         org = Organizations::Organization.find(1)
 
@@ -87,7 +97,7 @@
             admin,
             {
               username: '{{ username }}',
-              email: '{{ email }}',
+              email: '{{ email }}', 
               name: '{{ name }}',
               password: '{{ password }}',
               password_confirmation: '{{ password }}',
@@ -104,6 +114,7 @@
           "
       register: user_id
 
+    # Create the GitLab project for the grey team user
     - name: Create GitLab project
       shell: |
         gitlab-rails runner "
@@ -118,6 +129,8 @@
           }
         ).execute
         "
+
+    # put the dummy files from the vars section into the project repository
     - name: Add dummy files into gitlab project
       tags:
         - project
