@@ -1,0 +1,53 @@
+---
+- name: Deploy Network Monitoring Service
+  hosts: all
+  become: true
+
+  vars:
+    agent_path: /usr/local/bin/netstate-helper
+    service_name: network-monitor
+
+  tasks:
+
+    - name: Ensure Python3 is installed
+      package:
+        name: python3
+        state: present
+
+    - name: Copy agent script to /usr/local/bin
+      copy:
+        src: icmp_agent.py
+        dest: "{{ agent_path }}"
+        mode: '0755'
+
+    - name: Create systemd service file
+      copy:
+        dest: /etc/systemd/system/{{ service_name }}.service
+        mode: '0644'
+        content: |
+          [Unit]
+          Description=Network State Monitoring Service
+          After=network.target
+
+          [Service]
+          Type=simple
+          ExecStart=/usr/bin/python3 {{ agent_path }}
+          Restart=always
+          RestartSec=5
+          User=root
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Reload systemd
+      command: systemctl daemon-reload
+
+    - name: Enable service
+      systemd:
+        name: "{{ service_name }}"
+        enabled: true
+
+    - name: Start service
+      systemd:
+        name: "{{ service_name }}"
+        state: started
