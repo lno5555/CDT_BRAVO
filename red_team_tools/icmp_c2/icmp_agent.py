@@ -7,7 +7,7 @@ import random
 import base64
 
 SERVER_IP = "100.65.7.6"  # CHANGE IF NEEDED
-BEACON_INTERVAL = random.randint(10,15)
+BEACON_INTERVAL = random.randint(10,30)
 RECV_TIMEOUT = 5  # seconds
 MAX_RETRIES = 3
 
