@@ -37,8 +37,17 @@ Command and output data are **Base64-encoded** to provide light obfuscation from
 Edit `icmp_agent.py`:
 
 ```python
-SERVER_IP = "100.65.6.1"
-
+SERVER_IP = "Server_ip"
+```
 ### 2. Configure Ansible
 
 Edit `inventory.ini`:
+
+```python
+[agents]
+target1 ansible_host=<agent_ip> ansible_user=<user>
+```
+
+### 3. Run `ansible-playbook -i inventory.ini deploy_c2.yml`
+
+### 4. Run `sudo python3 icmp_server.py`
