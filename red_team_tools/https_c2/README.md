@@ -46,7 +46,7 @@ The system consists of:
    URL = "https://<Server_IP>:443"
 ```
 
-### 4. Add your target IPs to your Ansible hosts.ini
+### 4. Add your target IPs to your Ansible inventory.ini
 
 ### 5. Run `ansible-playbook -i inventory.ini deploy.yml`
 
