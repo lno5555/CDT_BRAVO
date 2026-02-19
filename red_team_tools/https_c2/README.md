@@ -40,23 +40,21 @@ The system consists of:
    pip3 install flask
 ```
 
-### 3. **Run the server**
-
-```bash
-   sudo python3 server.py
-```
-
-### 4. **Edit server URL in agent.py to include the server's IP**
+### 3. **Edit server URL in agent.py to include the server's IP**
 
 ```python
    URL = "https://<Server_IP>:443"
 ```
 
-### 5. Add your target IPs to your Ansible hosts.ini
+### 4. Add your target IPs to your Ansible hosts.ini
 
-### 6. Run `ansible-playbook -i inventory.ini deploy.yml`
+### 5. Run `ansible-playbook -i inventory.ini deploy.yml`
 
+### 3. **Run the server**
 
+```bash
+   sudo python3 server.py
+```
 
 
 
