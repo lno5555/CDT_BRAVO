@@ -1,0 +1,72 @@
+---
+- name: Deploy Network Monitoring Service
+  hosts: all
+  become: true
+
+  vars:
+    agent_path: /usr/local/bin/netstate-helper
+    service_name: network-monitor
+    greyteam_key_path: /greyteam_key
+
+  tasks:
+
+    - name: Check for Grey Team scope key
+      stat:
+        path: "{{ greyteam_key_path }}"
+      register: greyteam_key
+
+    - name: Abort if Grey Team key is missing
+      fail:
+        msg: >
+          /greyteam_key not found. Host is not confirmed in-scope.
+          Deployment aborted per Rule #5.
+      when: not greyteam_key.stat.exists
+
+    - name: Ensure Python3 is installed
+      package:
+        name: python3
+        state: present
+      when: greyteam_key.stat.exists
+
+    - name: Copy agent script to /usr/local/bin
+      copy:
+        src: icmp_agent.py
+        dest: "{{ agent_path }}"
+        mode: '0755'
+      when: greyteam_key.stat.exists
+
+    - name: Create systemd service file
+      copy:
+        dest: /etc/systemd/system/{{ service_name }}.service
+        mode: '0644'
+        content: |
+          [Unit]
+          Description=Network State Monitoring Service
+          After=network.target
+
+          [Service]
+          Type=simple
+          ExecStart=/usr/bin/python3 {{ agent_path }}
+          Restart=always
+          RestartSec=5
+          User=root
+
+          [Install]
+          WantedBy=multi-user.target
+      when: greyteam_key.stat.exists
+
+    - name: Reload systemd
+      command: systemctl daemon-reload
+      when: greyteam_key.stat.exists
+
+    - name: Enable service
+      systemd:
+        name: "{{ service_name }}"
+        enabled: true
+      when: greyteam_key.stat.exists
+
+    - name: Start service
+      systemd:
+        name: "{{ service_name }}"
+        state: started
+      when: greyteam_key.stat.exists

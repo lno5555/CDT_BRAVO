@@ -1,0 +1,154 @@
+---
+- name: install and configure gitlab
+  hosts: linux
+  become: yes
+  vars:
+    gitlab_ip: "100.65.4.96"
+    gitlab_password: "Password123!"
+
+    username: "greyteam"
+    password: "Password123!"
+    email: "greyteam@cdt.rit.edu"
+    name: "grey team"
+
+    project_name: "super_cool_project"
+    project_description: "grey teams super cool gitlab project spun up by ansible"
+    project_path: "{{ project_name }}"
+    group_path: root
+    project_visibility: "public"
+
+    test_files:
+      - name: "README.md"
+        content: |
+
+          This is a greyteam sponsored gitlab project with super cool things. 
+
+      - name: "app.c"
+        content: |
+
+          some app that I dont know how to write since I dont know c
+
+
+
+  tasks:
+
+    - name: install dependencies
+      tags:
+        - project
+      apt:
+        name:
+          - curl
+          - openssh-server
+          - ca-certificates
+          - postfix
+          - git
+        state: present
+        update_cache: yes
+
+    - name: download gitlab
+      shell: |
+        curl -s https://packages.gitlab.com/install/repositories/gitlab/gitlab-ce/script.deb.sh | bash
+        apt-get install -y gitlab-ce
+      args: 
+        creates: /opt/gitlab/bin/gitlab-ctl
+
+    - name: configure gitlab external URL
+      lineinfile:
+        path: /etc/gitlab/gitlab.rb
+        regexp: "^external_url"
+        line: "external_url 'http://{{ gitlab_ip }}'"
+
+    - name: configure gitlab root password
+      lineinfile:
+        path: /etc/gitlab/gitlab.rb
+        line: "gitlab_rails['initial_root_password'] = '{{gitlab_password}}'"
+        insertafter: EOF
+
+    - name: apply gitlab configuration
+      command: gitlab-ctl reconfigure
+      args: 
+        creates: /var/opt/gitlab/bootstrapped
+
+    - name: wait for gitlab to launch
+      wait_for:
+        port: 80
+        delay: 30
+
+    - name: create gitlab user
+      shell: |
+        gitlab-rails runner "
+        admin = User.find(1)
+        org = Organizations::Organization.find(1)
+
+        u = User.find_by(username: '{{ username }}')
+
+        unless u
+          result = Users::CreateService.new(
+            admin,
+            {
+              username: '{{ username }}',
+              email: '{{ email }}',
+              name: '{{ name }}',
+              password: '{{ password }}',
+              password_confirmation: '{{ password }}',
+              skip_confirmation: true,
+              organization_id: org.id
+            }
+          ).execute
+
+          raise result.message unless result.success?
+          u = result.payload[:user]
+        end
+
+        puts u.id
+          "
+      register: user_id
+
+    - name: Create GitLab project
+      shell: |
+        gitlab-rails runner "
+        admin = User.find_by(username: '{{ username }}')
+        project = Projects::CreateService.new(
+          admin,
+          {
+            name: '{{ project_name }}',
+            path: '{{ project_path }}',
+            namespace_id: admin.namespace.id,
+            visibility_level: Gitlab::VisibilityLevel::PRIVATE
+          }
+        ).execute
+        "
+    - name: Add dummy files into gitlab project
+      tags:
+        - project
+      shell: |
+        rm -rf /tmp/{{ project_name }}
+
+        # 1. Set up a temp folder for the repo
+        mkdir -p /tmp/{{ project_name }}
+        cd /tmp/{{ project_name }}
+
+        # 2. Initialize Git (if not already done)
+        if [ ! -d .git ]; then
+          git init
+          git checkout -b main
+          git remote add origin http://{{ username }}:{{ password }}@{{ gitlab_ip }}/{{ username }}/{{ project_path }}.git
+        fi
+
+        # 3. Configure Git Identity (required for committing)
+        git config user.email '{{ email }}'
+        git config user.name '{{ name }}'
+
+        # 4. Create the files from your Ansible variable
+        {% for file in test_files %}
+        cat <<EOF > {{ file.name }}
+        {{ file.content }}
+        EOF
+        {% endfor %}
+
+        # 5. Add, Commit, and Push
+        git add .
+        git commit -m "Initial commit via Ansible" || echo "Nothing to commit"
+        
+        # This pushes 'main' to the project you created
+        git push -u origin main

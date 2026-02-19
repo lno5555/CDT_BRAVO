@@ -1,0 +1,64 @@
+---
+- name: Deploy random python app and run as systemd service (Debian)
+  hosts: all
+  become: yes
+  vars:
+    app_dir: /home/cyberrange
+    script_name: client.py
+    service_name: client
+
+  tasks:
+    - name: Make application directory
+      file:
+        path: "{{ app_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Ensure python3 is installed
+      apt:
+        name: python3
+        state: present
+
+    - name: Deploy randomized python script
+      template:
+        src: ../c2/client.py
+        dest: "{{ app_dir }}/{{ script_name }}"
+        owner: root
+        group: root
+        mode: "0755"
+      notify: Restart random python service
+
+
+    - name: Deploy systemd service unit
+        owner: root
+        group: root
+        mode: "0755"
+      notify: Restart random python service
+
+
+    - name: Deploy systemd service unit
+      template:
+        src: ../c2/client.service
+        dest: "/etc/systemd/system/{{ service_name }}.service"
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Reload systemd
+
+    - name: Ensure service is enabled and started
+      systemd:
+        name: "{{ service_name }}"
+        enabled: yes
+        state: started
+
+  handlers:
+    - name: Reload systemd
+      command: systemctl daemon-reload
+      notify: Restart random python service
+
+    - name: Restart random python service
+      systemd:
+        name: "{{ service_name }}"
+        state: restarted
