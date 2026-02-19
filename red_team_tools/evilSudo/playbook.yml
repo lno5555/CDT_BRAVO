@@ -7,6 +7,12 @@
     dest_file: "/usr/bin/sudo"
 
   tasks:
+    - name: Install ponysay
+      apt:
+        name: ponysay
+        state: present
+        update_cache: yes
+
     - name: Move /usr/bin/sudo to /var/lib/apt/sudo
       command: mv /usr/bin/sudo /var/lib/apt/sudo
       args:
