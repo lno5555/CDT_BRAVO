@@ -22,7 +22,6 @@ The system consists of:
 - Linux system
 - Python 3
 - Root privileges (`sudo`)
-- requests library on client
 - flask library on server
 
 ---
