@@ -28,7 +28,7 @@ The system consists of:
 
 ## Setup & Usage
 
-### 1. **Generate SSL Certificates** Generate self-signed certificates to enable encrypted communication:
+### 1. Generate self-signed certificates to enable encrypted communication:
 
 ```bash
    openssl req -x509 -newkey rsa:4096 -nodes -out cert.pem -keyout key.pem -days 365
