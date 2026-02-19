@@ -55,6 +55,7 @@ The system consists of:
 ```bash
    sudo python3 server.py
 ```
+### Use command "<nodeID>:command" to execute commands on targets
 
 
 
