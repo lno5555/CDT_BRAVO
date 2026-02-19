@@ -1,0 +1,27 @@
+---
+- name: Deploy HTTP Agent
+  hosts: windows_agents
+  gather_facts: no
+  
+  vars:
+    task_name: HTTPAgent
+  
+  tasks:
+    - name: Copy HTTP agent script
+      copy:
+        src: http_win_agent.py
+        dest: C:\http_win_agent.py
+
+    - name: Create scheduled task for HTTP agent
+      win_scheduled_task:
+        name: "{{ task_name }}"
+        description: "Runs the HTTP agent script"
+        actions:
+          - path: python
+            arguments: C:\http_win_agent.py
+        triggers:
+          - type: boot
+        username: SYSTEM # feel free to change it
+        run_level: highest
+        state: present
+        enabled: yes
