@@ -46,7 +46,7 @@ The system consists of:
    sudo python3 server.py
 ```
 
-### 4. **Edit server URL to include the server's IP**
+### 4. **Edit server URL in agent.py to include the server's IP**
 
 ```python
    URL = "https://<Server_IP>:443"
