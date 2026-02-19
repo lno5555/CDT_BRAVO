@@ -1,0 +1,62 @@
+---
+- name: Install and configure Postfix mail server
+  hosts: mailservers
+  become: true
+
+  tasks:
+    # do this to avoid interactive prompt during Postfix installation
+    - name: Set Postfix debconf
+      debconf:
+        name: postfix
+        question: postfix/main_mailer_type
+        value: "Internet Site"
+        vtype: string
+
+    - name: Set mailname
+      copy:
+        dest: /etc/mailname
+        content: "{{ postfix_myhostname }}\n"
+        owner: root
+        group: root
+        mode: "0644"
+
+    # install the Postfix package fr
+    - name: Install Postfix
+      apt:
+        name: postfix
+        state: present
+        update_cache: true
+
+    # configure using jinja2 template
+    - name: Deploy main.cf from template
+      template:
+        src: main.cf.j2
+        dest: /etc/postfix/main.cf
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Restart postfix
+  
+    - name: Ensure Postfix is enabled and running
+      service:
+        name: postfix
+        state: started
+        enabled: true
+
+    # Postfix will create Maildir automatically on first delivery, but we can pre-create it just in case
+    - name: Ensure Maildir exists for system users
+      file:
+        path: "/home/{{ item }}/Maildir"
+        state: directory
+        owner: "{{ item }}"
+        group: "{{ item }}"
+        mode: "0700"
+      loop:
+        - root
+      when: postfix_home_mailbox is defined
+
+  handlers:
+    - name: Restart postfix
+      service:
+        name: postfix
+        state: restarted

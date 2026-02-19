@@ -1,0 +1,44 @@
+---
+- name: nginx with features
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: install nginx
+      apt:
+        name: nginx
+        update_cache: yes
+        state: present
+
+    - name: enable and start nginx
+      service:
+        name: nginx
+        enabled: yes
+        state: started
+
+    #rate limits
+    - name: add simple rate limit
+      copy:
+        dest: /etc/nginx/conf.d/greyteam-ratelimit.conf
+        mode: "0644"
+        content: |
+          limit_req_zone $binary_remote_addr zone=perip:10m rate=10r/s;
+
+    #log directory exists
+    - name: ensure nginx log dir exists
+      file:
+        path: /var/log/nginx
+        state: directory
+        owner: root
+        group: adm
+        mode: "0755"
+
+    # validate config
+    - name: validate nginx config
+      command: nginx -t
+      changed_when: false
+
+    - name: reload nginx
+      service:
+        name: nginx
+        state: reloaded

@@ -1,0 +1,15 @@
+postfix_myhostname: "{{ inventory_hostname }}"
+postfix_myorigin: "/etc/mailname" # use mailname file for origin, default on Debian-based systems
+
+# networking stuff. tell postfix to listen on all interfaces and protocols
+postfix_inet_interfaces: "all"
+postfix_inet_protocols: "all"
+
+# list of domains that this mail server will deliver to locally (without relaying)
+postfix_mydestination:
+  - "$myhostname"
+  - "localhost.$mydomain"
+  - "localhost"
+
+# mailbox settings
+postfix_home_mailbox: "Maildir/"

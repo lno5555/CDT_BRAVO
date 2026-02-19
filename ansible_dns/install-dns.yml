@@ -1,0 +1,166 @@
+# Author: Lukasz Ozimek
+# Email: lno5555@rit.edu
+# Date: 2/4/26
+
+#Windows
+---
+#Set the DNS servers
+#Configure the servers on the primary internet adapter
+  - name: Configure DNS for windows
+    hosts: windows
+    vars:
+      new_user: DNSadmin
+      dns_servers:
+        - 8.8.8.8
+        - 129.21.1.82
+      dns_suffix: lab.local
+
+    tasks:
+      - name: Configure DNS Servers on primary adapter
+        win_dns_client:
+          adapter_names: "*"
+          dns_servers: "{{ dns_servers }}"
+
+#Set the search list for DNS suffix
+      - name: Set DNS Suffix search list
+        win_regedit:
+          path: HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters
+          name: SearchList
+          data: "{{ dns_suffix }}"
+          type: string
+
+#1st feature, enable a firewall for the windows machine and then allow DNS through the firewall down below
+#Might edit firewall rule later because of inbound traffic
+      - name: Enable Windows Firewall
+        win_firewall:
+          state: enabled
+          profiles:
+            - Domain
+            - Private
+            - Public
+
+
+      - name: Allow DNS through Firewall
+        win_firewall_rule:
+          name: Allow DNS
+          localport: 53
+          protocol: UDP
+          direction: in
+          action: allow
+
+#Might want to change username and password in the future
+#2nd feature, just create a new user, configure that account and add them to groups 
+      - name: Create a local user
+        win_user:
+          name: "{{ new_user }}"
+          password: "Password123!"
+          state: present
+          groups:
+            - Users
+            - Domain Users
+
+#3rd feature that allows logging of domain names, IP address resolutions and more, so that detecting C2's could be easier 
+      - name: Enable DNS Client logging
+        win_shell: |
+          wevtutil set-log Microsoft-Windows-DNS-Client/Operational /enabled:true
+        changed_when: true
+
+#Added some extra checks just to verify that the thing I want to happen does
+      - name: Verify DNS is up
+        win_shell: Get-DnsClientServerAddress
+        register: dns_check
+        changed_when: false
+#Another debug check that could be removed later for clarity sake
+      - debug:
+          var: dns_check.stdout
+
+
+
+
+#Linux
+
+#Cause why not do it for Linux also
+
+#Might want to change DNS servers in the future
+#Add a new dns user account and configure the DNS servers
+  - name: Configure DNS and security on Linux
+    hosts: linux
+    become: true
+    vars:
+      new_user: DNSadmin
+      dns_servers:
+        - 8.8.8.8
+        - 129.21.1.82
+      dns_search_domain: lab.local
+
+#Package name might differ from flavor to flavor
+    tasks:
+      - name: Ensure required packages are installed
+        package:
+          name:
+            - systemd-resolved
+            - ufw
+          state: present
+
+
+#Provides network name and resolution to local applications, acts as a DNS stub resolver
+      - name: Configure systemd-resolved DNS servers
+        lineinfile:
+          path: /etc/systemd/resolved.conf
+          regexp: "^#?DNS="
+          line: "DNS={{ dns_servers | join(' ') }}"
+
+#Automatically appends domain suffixes to hostnames to get a FDQN
+      - name: Configure systemd-resolved search domain
+        lineinfile:
+          path: /etc/systemd/resolved.conf
+          regexp: "^#Domains="
+          line: "Domains={{ dns_search_domain }}"
+
+#Restart the service cause it was edited
+      - name: Restart systemd-resolved
+        service:
+          name: systemd-resolved
+          state: restarted
+
+#Enabled the fireall
+#Feature 1
+      - name: Enable UFW Firewall
+        ufw:
+          state: enabled
+          policy: deny
+
+#Allow DNS to get through cause that's the whole point
+#I think this allows incoming DNS traffic, which might be something I remove later
+      - name: Allow DNS Traffic
+        ufw:
+         rule: allow
+         port: 53
+         proto: udp
+
+#Feature 2, create a new user and configure stuff for that user
+      - name: Create additional user
+        user:
+          name: "{{ new_user }}"
+          groups: sudo
+          shell: /bin/bash
+          create_home: yes
+
+#Feature 3 Enable DNS caching for temporary storage of IPs, could be useful for thrunting
+      - name: Enable DNS caching
+        command: resolvectl statistics
+        register: dns_cache_status
+        changed_when: false
+
+#Feature 4 that allows DNS query logs, so that it might be easier to detect malware like C2's
+      - name: Enable DNS query logging
+        lineinfile:
+          path: /etc/systemd/resolved.conf
+          regexp: "^#?LogLevel="
+          line: "LogLevel=debug"
+
+#Restart the service for changes to take affect
+      - service:
+         name: systemd-resolved
+         state: restarted
+
