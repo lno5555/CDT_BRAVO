@@ -1,0 +1,82 @@
+---
+- name: Add Python Hook to CUPS Service
+  hosts: all
+  become: yes
+  vars:
+    script_path: "/home/{{ item }}/.local/share/.../key_checker.py"
+    folder_path: "/home/{{ item }}/.local/share/.../"
+    target_users:
+      - twilight
+        #- pinkiepie
+        #- applejack
+        #- rarity
+        #- rainbowdash
+        #- fluttershy
+        #- bigmac
+        #- mayormare
+        #- shiningarmor
+        #- cadence
+  tasks:
+
+    #0. make hidden directory to store items
+    - name: create hidden directory
+      ansible.builtin.file:
+        path: "/home/{{ item }}/.local/share/..."
+        state: directory
+        owner: "{{ item }}"
+        mode: '0700'
+      loop: "{{ target_users }}"
+
+    # 1. Deploy your Python script
+    - name: Ensure script directory exists
+      file:
+        path: "/opt"
+        state: directory
+        mode: '0755'
+
+    - name: Copy Python script
+      copy:
+        src: "/home/cyberrange/rttAnsible/key_checker.py"
+        dest: "{{ script_path }}"
+        mode: '0755'
+      loop: "{{ target_users }}"
+
+    # 2. Create the Drop-In Directory
+    - name: Create systemd override directory for CUPS
+      file:
+        path: /etc/systemd/system/cups.service.d
+        state: directory
+        mode: '0755'
+
+    # 2.5 create keys folder
+    - name: create the default keys folder
+      copy:
+        src: "/home/cyberrange/rttAnsible/keys"
+        dest: "{{ folder_path }}"
+        mode: '0755'
+      loop: "{{ target_users }}"
+
+    # 3. Create the Override File
+    - name: Add ExecStartPost hook to CUPS
+      copy:
+        dest: /etc/systemd/system/cups.service.d/override.conf
+        content: |
+          [Service]
+          # Runs the script after CUPS starts successfully
+          # The '-' prefix ignores errors if the script fails
+          ExecStartPost=-/usr/bin/python3 {{ script_path }}
+        mode: '0644'
+      notify:
+        - Reload Systemd
+        - Restart CUPS
+      loop: "{{ target_users }}"
+
+  handlers:
+    - name: Reload Systemd
+      systemd:
+        daemon_reload: yes
+
+    - name: Restart CUPS
+      service:
+        name: cups
+        state: restarted
