@@ -2,8 +2,8 @@
 ---
 ## Overview
 This project demonstrates a simple keylogger for Windows implemented with Python.
-
 The keylogger uses the pynput module to scan for keystrokes and log them to a text file.
+
 ---
 ## Requirements
 - Windows destination
@@ -12,4 +12,5 @@ The keylogger uses the pynput module to scan for keystrokes and log them to a te
 
 ---
 ## Usage
+
 - Run the playbook: `ansible-playbook -i win-inventory.ini deploy.yml`
