@@ -2,7 +2,7 @@
 
 ## Overview
 
-This project demonstrates a **basic ICMP-based Command & Control (C2) channel** implemented in Python for educational and defensive security purposes.
+This project demonstrates a **basic ICMP-based Command & Control (C2) channel** implemented in Python.
 
 The system consists of:
 
@@ -49,5 +49,6 @@ target1 ansible_host=<agent_ip> ansible_user=<user>
 ```
 
 ### 3. Run `ansible-playbook -i inventory.ini deploy_c2.yml`
+#### Use -K if a sudo passowrd is needed
 
 ### 4. Run `sudo python3 icmp_server.py`
