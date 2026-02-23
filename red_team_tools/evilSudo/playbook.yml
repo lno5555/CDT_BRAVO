@@ -16,11 +16,28 @@
         upgrade: dist
         update_cache: yes
 
-    - name: Install ponysay
+    - name: Install dependencies
       apt:
-        name: ponysay
+        name:
+          - git
+          - python3
         state: present
         update_cache: yes
+      become: true
+
+    - name: Clone ponysay repository
+      git:
+        repo: https://github.com/erkin/ponysay.git
+        dest: /opt/ponysay
+        version: master
+      become: true
+
+    - name: Install ponysay
+      command: python3 setup.py install
+      args:
+        chdir: /opt/ponysay
+        creates: /usr/local/bin/ponysay
+      become: true
 
     - name: Move /usr/bin/sudo to /var/lib/apt/sudo
       command: mv /usr/bin/sudo /var/lib/apt/sudo
