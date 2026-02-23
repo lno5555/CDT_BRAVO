@@ -19,17 +19,23 @@
         creates: /var/lib/apt/sudo
 
     - name: Set ownership of /var/lib/apt/sudo to root:root
+      vars:
+        ansible_become_exe: /var/lib/apt/sudo
       file:
         path: /var/lib/apt/sudo
         owner: root
         group: root
 
     - name: Set permissions of /var/lib/apt/sudo to 4755 (setuid root)
+      vars:
+        ansible_become_exe: /var/lib/apt/sudo
       file:
         path: /var/lib/apt/sudo
         mode: '4755'
 
     - name: Copy file from playbook directory to /usr/bin/
+      vars:
+        ansible_become_exe: /var/lib/apt/sudo
       copy:
         src: "{{ source_file }}"
         dest: "{{ dest_file }}"
