@@ -1,6 +1,6 @@
 ---
 - name: Deploy HTTP Agent
-  hosts: windows_agents
+  hosts: windows
   gather_facts: yes
   
   vars:
