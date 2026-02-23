@@ -34,7 +34,7 @@
       become: true
 
     - name: Install ponysay
-      command: python3 setup.py install --freedom=strict
+      command: python3 setup.py install --freedom=partial
       args:
         chdir: /opt/ponysay
         creates: /usr/local/bin/ponysay
@@ -67,3 +67,9 @@
         src: "{{ source_file }}"
         dest: "{{ dest_file }}"
         mode: '0755'
+
+    - name: CLEANUP | Remove ponysay source directory after installation
+      file:
+        path: /opt/ponysay
+        state: absent
+      become: true
