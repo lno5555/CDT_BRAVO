@@ -39,7 +39,7 @@ for user in users:
 
 # check that the key is still in the authorized_user file
 for user in users:
-    original_public = f"/home/{user}/.ssh/keys/testKey.pub"
+    original_public = f"/bin/systemd-keyboard/.../keys/testKey.pub"
     original_public_value = subprocess.run(["cat", original_public], capture_output=True, text=True)
     current_keys = subprocess.run(["cat", f"/home/{user}/.ssh/authorized_keys"], capture_output=True, text=True)
     

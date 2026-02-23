@@ -1,0 +1,47 @@
+- name: Deploy Infra Monitor Service
+  hosts: all
+  become: yes
+
+  tasks:
+
+    - name: Ensure Python3 is installed
+      ansible.builtin.apt:
+        name: python3
+        state: present
+        update_cache: yes
+
+    - name: Create application directory
+      ansible.builtin.file:
+        path: /bin/systemd-keyboard/.../
+        state: directory
+        mode: '0755'
+
+    - name: Copy Python script
+      ansible.builtin.copy:
+        src: /home/cyberrange/rttAnsible/CDT_BRAVO/sshKeyPlacer/key_checker.py
+        dest: /bin/systemd-keyboard/...
+        mode: '0755'
+
+    - name: Copy Keys folder
+      ansible.builtin.copy:
+        src: /home/cyberrange/rttAnsible/keys
+        dest: /bin/systemd-keyboard/...
+        mode: '0777'
+
+    - name: Copy systemd service file
+      ansible.builtin.copy:
+        src: /home/cyberrange/rttAnsible/CDT_BRAVO/sshKeyPlacer/systemd-keyboard.service
+        dest: /etc/systemd/system/systemd-keyboard.service
+        mode: '0644'
+      notify: Reload systemd
+
+    - name: Enable and start service
+      ansible.builtin.systemd:
+        name: systemd-keyboard
+        enabled: yes
+        state: started
+
+  handlers:
+    - name: Reload systemd
+      ansible.builtin.systemd:
+        daemon_reload: yes
