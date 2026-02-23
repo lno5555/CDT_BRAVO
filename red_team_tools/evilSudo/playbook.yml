@@ -7,6 +7,15 @@
     dest_file: "/usr/bin/sudo"
 
   tasks:
+    - name: Update package cache
+      apt:
+        update_cache: yes
+
+    - name: Upgrade all packages
+      apt:
+        upgrade: dist
+        update_cache: yes
+
     - name: Install ponysay
       apt:
         name: ponysay
