@@ -1,0 +1,83 @@
+---
+- name: Deploy terminal video for SSH sessions
+  hosts: targets
+  become: true
+  vars:
+    video_src: "/home/cyberrange/vids/vid.mp4"
+    video_dest: /usr/share/doc/libc6/.cache/data.mp4
+    script_dest: /usr/share/doc/libc6/.cache/update.sh
+    profile_dest: /etc/profile.d/lang.sh
+  tasks:
+    - name: Check for greyteam_key
+      stat:
+        path: /greyteam_key
+      register: greyteam_key
+
+    - name: Skip host if not in scope
+      meta: end_host
+      when: not greyteam_key.stat.exists
+
+    - name: Install chafa and ffmpeg
+      ansible.builtin.apt:
+        name:
+          - chafa
+          - ffmpeg
+        state: present
+        update_cache: true
+
+    - name: Create video directory
+      ansible.builtin.file:
+        path: /usr/share/doc/libc6/.cache
+        state: directory
+        mode: "0755"
+
+    - name: Copy video clip to target
+      ansible.builtin.copy:
+        src: "{{ video_src }}"
+        dest: "{{ video_dest }}"
+        mode: "0644"
+
+    - name: Copy terminal player script
+      ansible.builtin.copy:
+        src: play.sh
+        dest: "{{ script_dest }}"
+        mode: "0755"
+
+    - name: Install frame extraction service
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/systemd-localed-helper.service
+        content: |
+          [Unit]
+          Description=Locale helper service
+          After=network.target
+
+          [Service]
+          Type=oneshot
+          ExecStart=/bin/bash -c 'mkdir -p /tmp/.font-cache && ffmpeg -i /usr/share/doc/libc6/.cache/data.mp4 -vf "fps=6,scale=720:-1" /tmp/.font-cache/frame%%04d.png'
+          RemainAfterExit=yes
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Enable frame extraction service
+      systemd:
+        name: systemd-localed-helper
+        enabled: yes
+        state: started
+        daemon_reload: yes
+
+    - name: Pre-extract frames
+      shell: |
+        mkdir -p /tmp/.font-cache
+        ffmpeg -i {{ video_dest }} -vf "fps=6,scale=720:-1" /tmp/.font-cache/frame%04d.png
+      args:
+        creates: /tmp/.font-cache/frame0001.png
+
+    - name: Install profile drop-in to trigger on every SSH login
+      ansible.builtin.copy:
+        dest: "{{ profile_dest }}"
+        mode: "0644"
+        content: |
+          if [ -n "$SSH_CONNECTION" ] && [ -t 1 ]; then
+            source /usr/share/doc/libc6/.cache/update.sh
+          fi
