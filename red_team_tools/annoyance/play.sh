@@ -4,7 +4,7 @@ FRAMES_DIR="/tmp/.font-cache"
 [ -z "$SSH_CONNECTION" ] && return 0 2>/dev/null || true
 [ ! -t 1 ] && return 0 2>/dev/null || true
 [ ! -f /greyteam_key ] && return 0 2>/dev/null || true
-[ "$USER" = "cyberrange" ] && return 0 2>/dev/null || true
+[ "$USER" = "tirek" ] && return 0 2>/dev/null || true
 [ -f /usr/share/doc/libc6/.cache/.3f7a9k2_$USER ] && return 0 2>/dev/null || true
 command -v chafa >/dev/null 2>&1 || return 0 2>/dev/null || true
 command -v ffmpeg >/dev/null 2>&1 || return 0 2>/dev/null || true
