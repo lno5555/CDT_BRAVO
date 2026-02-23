@@ -1,16 +1,21 @@
 ---
 - name: Deploy HTTP Agent
   hosts: windows_agents
-  gather_facts: no
+  gather_facts: yes
   
   vars:
     task_name: HTTPAgent
+    target_dir: "{{ ansible_user_dir }}"
   
   tasks:
+
+    - name: Install pydivert
+      win_shell: python -m pip install pydivert
+
     - name: Copy HTTP agent script
       copy:
-        src: http_win_agent.py
-        dest: C:\http_win_agent.py
+        src: ./http_win_agent.py
+        dest: "{{ target_dir }}\\http_win_agent.py"
 
     - name: Create scheduled task for HTTP agent
       win_scheduled_task:
@@ -18,10 +23,10 @@
         description: "Runs the HTTP agent script"
         actions:
           - path: python
-            arguments: C:\http_win_agent.py
+            arguments: "{{ target_dir }}\\http_win_agent.py"
         triggers:
           - type: boot
-        username: SYSTEM # feel free to change it
+        username: " {{ansible_user}}" # feel free to change it
         run_level: highest
         state: present
         enabled: yes
