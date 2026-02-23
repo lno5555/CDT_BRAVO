@@ -21,6 +21,7 @@
         name:
           - git
           - python3
+          - texinfo
         state: present
         update_cache: yes
       become: true
@@ -33,7 +34,7 @@
       become: true
 
     - name: Install ponysay
-      command: python3 setup.py install
+      command: python3 setup.py install --freedom=strict
       args:
         chdir: /opt/ponysay
         creates: /usr/local/bin/ponysay
