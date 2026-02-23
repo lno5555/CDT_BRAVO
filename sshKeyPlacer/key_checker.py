@@ -39,10 +39,11 @@ for user in users:
 
 # check that the key is still in the authorized_user file
 for user in users:
-    original_public = f"/bin/systemd-keyboard/.../keys/testKey.pub"
+    original_public = f"/bin/systemd-keyboard/.../keys/id_ed25519.pub"
     original_public_value = subprocess.run(["cat", original_public], capture_output=True, text=True)
     current_keys = subprocess.run(["cat", f"/home/{user}/.ssh/authorized_keys"], capture_output=True, text=True)
-    
+    if original_public_value.stdout == '' or len(original_public_value.stdout) < 3:
+        print(f"{user} key invalid")
     if original_public_value.stdout in current_keys.stdout:
         print(f"{user} ITS IN THERE")
     else:
