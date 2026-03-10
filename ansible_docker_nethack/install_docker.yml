@@ -11,12 +11,13 @@
   become: true
 
   vars:
-    docker_user: "{{ ansible_user }}"
+    docker_user: docker
     nethack_container_name: medieval_nethack
     nethack_image: jwodder/nethack:latest
     nethack_data_dir: /srv/nethack_data
 
   tasks:
+
     # Install Docker prerequisites
     - name: Install required packages
       apt:
@@ -39,7 +40,7 @@
         repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable
         state: present
 
-    # Install and start Docker
+    # Install Docker
     - name: Install Docker Engine
       apt:
         name: docker-ce
@@ -52,7 +53,15 @@
         state: started
         enabled: yes
 
-    - name: Add user to Docker group
+    # Create docker user
+    - name: Create docker user
+      user:
+        name: "{{ docker_user }}"
+        shell: /bin/bash
+        create_home: yes
+
+    # Add docker user to docker group
+    - name: Add docker user to docker group
       user:
         name: "{{ docker_user }}"
         groups: docker
@@ -63,8 +72,8 @@
       file:
         path: "{{ nethack_data_dir }}"
         state: directory
-        owner: root
-        group: root
+        owner: "{{ docker_user }}"
+        group: "{{ docker_user }}"
         mode: '0755'
 
     # Pull NetHack image
