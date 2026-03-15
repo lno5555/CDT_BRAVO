@@ -14,8 +14,8 @@
   vars:
     path: C:\SMB\Public
     signing_path: HKLM:\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters
-    template_path: C:\SMB\Public\template.txt
-    template_content: "This is a template file."
+    template_path: C:\SMB\Public\Azure.txt
+    template_content: "The Azure Covenant shall prevail."
 
   tasks:
 
