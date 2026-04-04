@@ -2,17 +2,13 @@
 
 echo "[+] Starting Blue Team 5-Minute Hardening Script..."
 
-# -----------------------------
 # 1. Ensure script is run as root
-# -----------------------------
 if [[ $EUID -ne 0 ]]; then
    echo "[-] Please run as root (sudo ./script.sh)"
    exit 1
 fi
 
-# -----------------------------
 # 2. Argument Handling
-# -----------------------------
 DO_BACKUP=false
 
 if [[ "$1" == "--backup" ]]; then
@@ -50,9 +46,7 @@ elif [[ "$1" == "--restore-nginx" ]]; then
     exit 0
 fi
 
-# -----------------------------
 # 3. Backup Function
-# -----------------------------
 backup_dir() {
     SRC_DIR="$1"
     BACKUP_BASE="/opt/turf_backups"
@@ -73,9 +67,7 @@ backup_dir() {
     echo "[+] Backup complete."
 }
 
-# -----------------------------
 # 4. Optional Backup Step
-# -----------------------------
 if [ "$DO_BACKUP" = true ]; then
     echo "[+] Backup mode enabled..."
 
@@ -86,50 +78,37 @@ if [ "$DO_BACKUP" = true ]; then
     ls -lh /opt/turf_backups
 fi
 
-# -----------------------------
 # 5. Update system
-# -----------------------------
 echo "[+] Updating system packages..."
 apt update -y && apt upgrade -y
 
-# -----------------------------
 # 6. Install essential tools
-# -----------------------------
 echo "[+] Installing security tools..."
 apt install -y ufw net-tools lsof curl
 
-# -----------------------------
 # 7. Configure firewall
-# -----------------------------
 echo "[+] Configuring UFW firewall..."
 ufw --force reset
-ufw default deny incoming
 ufw default allow outgoing
 
 ufw allow 22/tcp   # SSH
 ufw allow 80/tcp   # HTTP
 ufw allow 443/tcp  # HTTPS
-
+ufw default deny incoming
 ufw --force enable
 ufw status verbose
 
-# -----------------------------
 # 8. Check active connections
-# -----------------------------
 echo "[+] Listing active network connections..."
 ss -tulnp
 lsof -i -n -P | head -20
 
-# -----------------------------
 # 9. Process inspection
-# -----------------------------
 echo "[+] Top CPU processes:"
 ps aux --sort=-%cpu | head -10
 echo "[!] Review processes manually before killing."
 
-# -----------------------------
 # 10. Secure Nginx
-# -----------------------------
 echo "[+] Securing Nginx..."
 
 NGINX_CONF="/etc/nginx/nginx.conf"
@@ -148,17 +127,13 @@ else
     echo "[!] Nginx not found, skipping..."
 fi
 
-# -----------------------------
 # 11. Inspect web directory
-# -----------------------------
 echo "[+] Checking /var/www for recent changes..."
 if [ -d "/var/www" ]; then
     find /var/www -type f -mtime -1
 fi
 
-# -----------------------------
 # 12. Persistence checks
-# -----------------------------
 echo "[+] Checking cron jobs..."
 crontab -l 2>/dev/null
 
@@ -168,17 +143,12 @@ ls /etc/cron.*
 echo "[+] Enabled services:"
 systemctl list-unit-files --type=service | grep enabled
 
-# -----------------------------
 # 13. User review
-# -----------------------------
 echo "[+] Listing system users:"
 cut -d: -f1 /etc/passwd
 
 echo "[!] Lock suspicious accounts manually:"
 echo "    usermod -L <username>"
 
-# -----------------------------
-# DONE
-# -----------------------------
 echo "[+] Initial hardening complete!"
 echo "[!] Continue with deeper forensic analysis."
