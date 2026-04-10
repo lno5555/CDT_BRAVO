@@ -33,8 +33,14 @@ Get-LocalUser | ForEach-Object {
 
 #Disable users not in the list
 Get-LocalUser | ForEach-Object {
-    if ($_.Name -notin @("zhukov", "gusev", "makarov", "festisov", "kasatonov", "krutov", "lebedev", "vasiliev", "tikhonov", "kulagin", "brezhnev", "tretiak", "larionov", "kaspirov", "gagarin", "korolev", "tupolev", "sukhoi", "yakovlev", "mig", "su", "tu", "il", "grayteam", "greyteam")) {
+    if ($_.Name -notin @("zhukov", "gusev", "makarov", "festisov", "kasatonov", "krutov", "lebedev", "vasiliev", "tikhonov", "kulagin", "brezhnev", "tretiak", "larionov", "kaspirov", "gagarin", "korolev", "tupolev", "sukhoi", "yakovlev", "mig", "su", "tu", "il", "grayteam", "greyteam", "Administrator", "scoring")) {
         Disable-LocalUser -Name $_.Name
         Write-Host "Disabled user $($_.Name)"
     }
 }
+
+
+
+#Make script rotate passwords every 5 minutes
+
+
