@@ -103,7 +103,7 @@ Write-Host "Rule added: Allow NetBIOS Session (TCP 139)"
 netsh advfirewall firewall add rule name="Allow RPC Endpoint Mapper" protocol=TCP dir=in localport=135 action=allow
 Write-Host "Rule added: Allow RPC Endpoint Mapper (TCP 135)"
 
-netsh advfirewall firewall add rule name="Allow RPC Dynamic Ports" protocol=TCP dir=in localport=49152-65535 action=allow
+netsh advfirewall firewall add rule name="Allow RPC Dynamic Ports" protocol=TCP dir=in localport="49152-65535" action=allow
 Write-Host "Rule added: Allow RPC Dynamic Ports (TCP 49152-65535)"
 
 # NTP - Domain time sync
