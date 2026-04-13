@@ -67,8 +67,10 @@ foreach ($user in $new_users) {
     if (-not (Get-LocalUser -Name $user -ErrorAction SilentlyContinue)) {
         New-LocalUser -Name $user -Password $initialPassword -FullName $user -Description "Created by script"
         Write-Host "Created user: $user"
+        Add-LocalGroupMember -Group "Remote Desktop Users" -Member "Username"
+
     } else {
-        Write-Host "User already exists: $user"
+        Write-Host "User alG eady exists: $user"
     }
 }
 
