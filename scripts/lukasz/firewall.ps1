@@ -51,99 +51,78 @@ Write-Host "Default policy set: block inbound, allow outbound"
 # ---- Allow Inbound Rules ----
 
 # RDP
-netsh advfirewall firewall add rule name="Allow RDP" `
-    protocol=TCP dir=in localport=3389 action=allow
+netsh advfirewall firewall add rule name="Allow RDP" protocol=TCP dir=in localport=3389 action=allow
 Write-Host "Rule added: Allow RDP (TCP 3389)"
 
 # HTTP/HTTPS
-netsh advfirewall firewall add rule name="Allow HTTP" `
-    protocol=TCP dir=in localport=80 action=allow
+netsh advfirewall firewall add rule name="Allow HTTP" protocol=TCP dir=in localport=80 action=allow
 Write-Host "Rule added: Allow HTTP (TCP 80)"
 
-netsh advfirewall firewall add rule name="Allow HTTPS" `
-    protocol=TCP dir=in localport=443 action=allow
+netsh advfirewall firewall add rule name="Allow HTTPS" protocol=TCP dir=in localport=443 action=allow
 Write-Host "Rule added: Allow HTTPS (TCP 443)"
 
 # DNS
-netsh advfirewall firewall add rule name="Allow DNS UDP" `
-    protocol=UDP dir=in localport=53 action=allow
+netsh advfirewall firewall add rule name="Allow DNS UDP" protocol=UDP dir=in localport=53 action=allow
 Write-Host "Rule added: Allow DNS (UDP 53)"
 
-netsh advfirewall firewall add rule name="Allow DNS TCP" `
-    protocol=TCP dir=in localport=53 action=allow
+netsh advfirewall firewall add rule name="Allow DNS TCP" protocol=TCP dir=in localport=53 action=allow
 Write-Host "Rule added: Allow DNS (TCP 53)"
 
 # LDAP / LDAPS
-netsh advfirewall firewall add rule name="Allow LDAP" `
-    protocol=TCP dir=in localport=389 action=allow
+netsh advfirewall firewall add rule name="Allow LDAP" protocol=TCP dir=in localport=389 action=allow
 Write-Host "Rule added: Allow LDAP (TCP 389)"
 
-netsh advfirewall firewall add rule name="Allow LDAP UDP" `
-    protocol=UDP dir=in localport=389 action=allow
+netsh advfirewall firewall add rule name="Allow LDAP UDP" protocol=UDP dir=in localport=389 action=allow
 Write-Host "Rule added: Allow LDAP (UDP 389)"
 
-netsh advfirewall firewall add rule name="Allow LDAPS" `
-    protocol=TCP dir=in localport=636 action=allow
+netsh advfirewall firewall add rule name="Allow LDAPS" protocol=TCP dir=in localport=636 action=allow
 Write-Host "Rule added: Allow LDAPS (TCP 636)"
 
 # Kerberos
-netsh advfirewall firewall add rule name="Allow Kerberos TCP" `
-    protocol=TCP dir=in localport=88 action=allow
+netsh advfirewall firewall add rule name="Allow Kerberos TCP" protocol=TCP dir=in localport=88 action=allow
 Write-Host "Rule added: Allow Kerberos (TCP 88)"
 
-netsh advfirewall firewall add rule name="Allow Kerberos UDP" `
-    protocol=UDP dir=in localport=88 action=allow
+netsh advfirewall firewall add rule name="Allow Kerberos UDP" protocol=UDP dir=in localport=88 action=allow
 Write-Host "Rule added: Allow Kerberos (UDP 88)"
 
 # SMB
-netsh advfirewall firewall add rule name="Allow SMB" `
-    protocol=TCP dir=in localport=445 action=allow
+netsh advfirewall firewall add rule name="Allow SMB" protocol=TCP dir=in localport=445 action=allow
 Write-Host "Rule added: Allow SMB (TCP 445)"
 
 # NetBIOS
-netsh advfirewall firewall add rule name="Allow NetBIOS Name Service" `
-    protocol=UDP dir=in localport=137 action=allow
+netsh advfirewall firewall add rule name="Allow NetBIOS Name Service" protocol=UDP dir=in localport=137 action=allow
 Write-Host "Rule added: Allow NetBIOS Name Service (UDP 137)"
 
-netsh advfirewall firewall add rule name="Allow NetBIOS Datagram" `
-    protocol=UDP dir=in localport=138 action=allow
+netsh advfirewall firewall add rule name="Allow NetBIOS Datagram" protocol=UDP dir=in localport=138 action=allow
 Write-Host "Rule added: Allow NetBIOS Datagram (UDP 138)"
 
-netsh advfirewall firewall add rule name="Allow NetBIOS Session" `
-    protocol=TCP dir=in localport=139 action=allow
+netsh advfirewall firewall add rule name="Allow NetBIOS Session" protocol=TCP dir=in localport=139 action=allow
 Write-Host "Rule added: Allow NetBIOS Session (TCP 139)"
 
 # RPC
-netsh advfirewall firewall add rule name="Allow RPC Endpoint Mapper" `
-    protocol=TCP dir=in localport=135 action=allow
+netsh advfirewall firewall add rule name="Allow RPC Endpoint Mapper" protocol=TCP dir=in localport=135 action=allow
 Write-Host "Rule added: Allow RPC Endpoint Mapper (TCP 135)"
 
-netsh advfirewall firewall add rule name="Allow RPC Dynamic Ports" `
-    protocol=TCP dir=in localport=49152-65535 action=allow
+netsh advfirewall firewall add rule name="Allow RPC Dynamic Ports" protocol=TCP dir=in localport=49152-65535 action=allow
 Write-Host "Rule added: Allow RPC Dynamic Ports (TCP 49152-65535)"
 
 # NTP - Domain time sync
-netsh advfirewall firewall add rule name="Allow NTP" `
-    protocol=UDP dir=in localport=123 action=allow
+netsh advfirewall firewall add rule name="Allow NTP" protocol=UDP dir=in localport=123 action=allow
 Write-Host "Rule added: Allow NTP (UDP 123)"
 
 # Global Catalog
-netsh advfirewall firewall add rule name="Allow Global Catalog" `
-    protocol=TCP dir=in localport=3268 action=allow
+netsh advfirewall firewall add rule name="Allow Global Catalog" protocol=TCP dir=in localport=3268 action=allow
 Write-Host "Rule added: Allow Global Catalog (TCP 3268)"
 
-netsh advfirewall firewall add rule name="Allow Global Catalog SSL" `
-    protocol=TCP dir=in localport=3269 action=allow
+netsh advfirewall firewall add rule name="Allow Global Catalog SSL" protocol=TCP dir=in localport=3269 action=allow
 Write-Host "Rule added: Allow Global Catalog SSL (TCP 3269)"
 
 # DFSR - Replication
-netsh advfirewall firewall add rule name="Allow DFSR" `
-    protocol=TCP dir=in localport=5722 action=allow
+netsh advfirewall firewall add rule name="Allow DFSR" protocol=TCP dir=in localport=5722 action=allow
 Write-Host "Rule added: Allow DFSR Replication (TCP 5722)"
 
 # ICMP - Ping
-netsh advfirewall firewall add rule name="Allow ICMP" `
-    protocol=icmpv4 dir=in action=allow
+netsh advfirewall firewall add rule name="Allow ICMP" protocol=icmpv4 dir=in action=allow
 Write-Host "Rule added: Allow ICMP (Ping)"
 
 
