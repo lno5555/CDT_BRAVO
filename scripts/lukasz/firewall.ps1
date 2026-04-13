@@ -8,6 +8,10 @@
 # ============================================================
 
 
+# ---- Define Backup Path ----
+$backupFile = "C:\fw-backup.wfw"
+
+
 # ---- Flush / Reset Option ----
 Write-Host "========================================"
 Write-Host "  Firewall Management Menu"
@@ -26,7 +30,6 @@ if ($menuChoice -eq "2") {
 }
 
 if ($menuChoice -eq "3") {
-    $backupFile = "C:\fw-backup.wfw"
     if (Test-Path $backupFile) {
         netsh advfirewall import $backupFile
         Write-Host "Firewall restored from: $backupFile"
@@ -38,7 +41,6 @@ if ($menuChoice -eq "3") {
 
 
 # ---- Backup Current Firewall Rules ----
-$backupFile = "C:\fw-backup.wfw"
 netsh advfirewall export $backupFile
 Write-Host "Firewall configuration backed up to: $backupFile"
 
@@ -106,7 +108,7 @@ Write-Host "Rule added: Allow RPC Endpoint Mapper (TCP 135)"
 netsh advfirewall firewall add rule name="Allow RPC Dynamic Ports" protocol=TCP dir=in localport="49152-65535" action=allow
 Write-Host "Rule added: Allow RPC Dynamic Ports (TCP 49152-65535)"
 
-# NTP - Domain time sync
+# NTP
 netsh advfirewall firewall add rule name="Allow NTP" protocol=UDP dir=in localport=123 action=allow
 Write-Host "Rule added: Allow NTP (UDP 123)"
 
@@ -124,7 +126,6 @@ Write-Host "Rule added: Allow DFSR Replication (TCP 5722)"
 # ICMP - Ping
 netsh advfirewall firewall add rule name="Allow ICMP" protocol=icmpv4 dir=in action=allow
 Write-Host "Rule added: Allow ICMP (Ping)"
-
 
 Write-Host "`nAll DC firewall rules applied."
 
